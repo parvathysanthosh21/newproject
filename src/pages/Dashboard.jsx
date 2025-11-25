@@ -1,8 +1,24 @@
 import React from 'react'
-
+import Header from '../Components/Header'
+import { Col, Row } from 'react-bootstrap'
+import MyProjects from '../Components/MyProjects'
+import MyProfile from '../Components/MyProfile'
 function Dashboard() {
   return (
-    <div>Dashboard</div>
+    <div>
+      <Header insideDashboard/>
+       <Row style={{ marginTop: '100px' }} className='container-fluid'>
+        {/* my project */}
+        <Col sm={12} md={8}>
+          <h2>Welcome <span className='text-primary fw-bolder'>User</span> </h2>
+         <MyProjects/>
+        </Col>
+        {/* myprofile */}
+        <Col sm={12} md={4}>
+          <MyProfile/>
+        </Col>
+      </Row>
+    </div>
   )
 }
 
