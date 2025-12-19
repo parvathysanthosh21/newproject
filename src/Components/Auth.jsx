@@ -1,13 +1,18 @@
 import React from 'react'
-import { useState } from 'react'
-import { Form } from 'react-bootstrap'
+import { useState,useContext } from 'react'
+import { Form, Spinner } from 'react-bootstrap'
 import { Link, useNavigate } from 'react-router-dom'
 import { loginAPI, registerAPI } from '../Services/allAPI'
+import { tokenAuthenticationContext } from '../ContextAPI/TokenAuth';
+
 import { ToastContainer, toast } from 'react-toastify';
 function Auth({ register }) {
+  const {isAuthorised,setIsAuthorised} = useContext(tokenAuthenticationContext)
+
   const [userData, setUserData] = useState({
     username: "", email: "", password: ""
   })
+  const [loginStatus,setLoginStatus]=useState(false)
   const navigate = useNavigate()
   const isRegisterForm = register ? true : false
   const handleRegister = async (e) => {
@@ -48,17 +53,32 @@ function Auth({ register }) {
     if (!email || !password) {
       toast.info("Please Fill The form completely")
     } else {
-      const result = await loginAPI(userData)
+      try {
+        
+      const result = await loginAPI({email,password})
+        console.log(result);
       if (result.status === 200) {
-        toast.success(`${result.data.username} has registerd successfully!!!`)
-setUserData({
+        setLoginStatus(true)
+         sessionStorage.setItem("username",result.data.existingUser.username)
+        sessionStorage.setItem("token",result.data.token)
+        sessionStorage.setItem("userDetails",JSON.stringify(result.data.existingUser))
+        setIsAuthorised(true)
+        setTimeout(()=>{
+ setUserData({
           email:"",password:""
         })
-        navigate('/')
+       navigate("/")
+               setLoginStatus(false)
+
+        },2000)
       }else{
         toast.warning(result.response.data)
-        console.log(result);
       }
+      } catch (err) {
+        console.log(err);
+        
+      }
+
     }
   }
   return (
@@ -99,8 +119,8 @@ setUserData({
                         <p>Already have an Account? Click Here To <Link style={{ textDecoration: 'none', color: 'red', fontWeight: 'bolder' }} to={'/login'}>Login</Link> </p>
 
                       </div> :
-                      <div>
-                        <button onClick={handleLogin} className="btn btn-light mb-2">Login</button>
+                      <div> 
+                        <button onClick={handleLogin} className="btn btn-light mb-2">Login {loginStatus&&  <Spinner animation="border" variant="warning" />}</button>
                         <p>New User? Click Here To <Link style={{ textDecoration: 'none', color: 'red', fontWeight: 'bolder' }} to={'/register'}>Register</Link> </p>
 
                       </div>

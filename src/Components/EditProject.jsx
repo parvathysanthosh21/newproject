@@ -1,93 +1,84 @@
 import React, { useContext, useEffect, useState } from 'react'
-import { Button, Modal } from 'react-bootstrap';
+import { Button, Modal } from 'react-bootstrap'
 import { ToastContainer, toast } from 'react-toastify';
-import { addProjectAPI } from '../Services/allAPI';
-import { addProjectResponseContext } from '../ContextAPI/ContextShares';
+import { BASE_URL } from '../Services/baseurl';
+import { editProjectAPI } from '../Services/allAPI';
+import { editProjectResponseContext } from '../ContextAPI/ContextShares';
 
-function AddProject() {
+
+function EditProject({ project }) {
+  console.log(project);
+  const {editProjectResponce,setEditProjectResponce} = useContext(editProjectResponseContext)
   const [show, setShow] = useState(false);
   const handleClose = () => {
     setShow(false);
     setProjectData({
-      title: "", languages: "", overview: "", github: "", website: "", projectImage: ""
+      id: project._id, title: project.title, languages: project.languages, overview: project.overview, github: project.github, website: project.website, projectImage: ""
     })
     setPreview("")
   }
   const handleShow = () => setShow(true);
 
-  // get context
-
-  const {addProjectResponse,setAddProjectResponce} = useContext(addProjectResponseContext)
-
-  const [preview, setPreview] = useState("")
   const [projectData, setProjectData] = useState({
-    title: "", languages: "", overview: "", github: "", website: "", projectImage: ""
+    id: project._id, title: project.title, languages: project.languages, overview: project.overview, github: project.github, website: project.website, projectImage: ""
   })
-  console.log(projectData);
-  const [fileStatus, setFileStatus] = useState(false)
-  useEffect(() => {
-    // console.log(projectData.projectImage.type);
-    if (projectData.projectImage.type === "image/jpeg" || projectData.projectImage.type === "image/png" || projectData.projectImage.type === "image/jpg") {
-      // console.log("generate img url");
-      setPreview(URL.createObjectURL(projectData.projectImage));
+  const [preview, setPreview] = useState("")
 
-      setFileStatus(false)
+  useEffect(() => {
+    if (projectData.projectImage) {
+      setPreview(URL.createObjectURL(projectData.projectImage))
     } else {
-      // console.log("please upload following (png jpeg,jpg) extention only");
-      setFileStatus(true)
       setPreview("")
-      setProjectData({ ...projectData, projectImage: " " })
     }
   }, [projectData.projectImage])
 
-  const handleAddProject = async () => {
-    const { title, languages, overview, github, website, projectImage } = projectData
-    if (!title || !languages || !overview || !github || !website || !projectImage) {
-      toast.info("Please FIll The Form Completely")
+  const handleUpdate = async () => {
+    const { id, title, languages, overview, github, website, projectImage } = projectData
+    if (!title || !languages || !overview || !github || !website) {
+      toast.info("Please fill the form completely")
     } else {
-      // api call reqBody
       const reqBody = new FormData()
       reqBody.append("title", title)
       reqBody.append("languages", languages)
       reqBody.append("overview", overview)
       reqBody.append("github", github)
       reqBody.append("website", website)
-      reqBody.append("projectImage", projectImage)
+      preview ? reqBody.append("projectImage", projectImage) : reqBody.append("projectImage", project.projectImage)
 
       // api call - reqHeader
       const token = sessionStorage.getItem("token")
-      // console.log(token);
-      
+      console.log(token);
       if (token) {
         const reqHeader = {
-          "Content-Type": "multipart/form-data",
+          "Content-Type": preview ? "multipart/form-data" : "application/json",
           "Authorization": `Bearer ${token}`
         }
         // api call
+
         try {
-          const result = await addProjectAPI(reqBody, reqHeader)
+          const result = await editProjectAPI(id, reqBody, reqHeader)
           console.log(result);
-          if (result.status === 200) {
-            console.log(result.data);
+          
+          if(result.status===200){
+            // toast.success(`Project ${result.data.title} updated successfully`)
             handleClose()
-            setAddProjectResponce(result.data)
-          } else {
+            setEditProjectResponce(result.data)
+          }else{
             toast.warning(result.response.data)
           }
-        } catch(err) {
+        } catch (err) {
           console.log(err);
 
         }
-
       }
-
     }
   }
+
   return (
     <>
-      <Button variant="primary" onClick={handleShow}>
-        Add Project
-      </Button>
+      <button onClick={handleShow} className="btn"> <i class="fa-solid fa-pen-to-square fa-2x"></i> </button>
+
+
 
       <Modal
         show={show}
@@ -106,15 +97,12 @@ function AddProject() {
             <div className="col-lg-6">
               <label>
                 <input type="file" style={{ display: 'none' }} onChange={e => setProjectData({ ...projectData, projectImage: e.target.files[0] })} />
-                <img className='img-fluid' src={preview ? preview : "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQeJQeJyzgAzTEVqXiGe90RGBFhfp_4RcJJMQ&s"} alt="projectpic" />
+                <img className='img-fluid' src={preview ? preview : `${BASE_URL}/uploads/${project.projectImage}`} alt="projectpic" />
               </label>
 
-              {
-                fileStatus &&
-                <div className="text-danger mt-2">
-                  "Please upload following (png , jpeg , jpg) extention only"
-                </div>
-              }
+
+
+
             </div>
             <div className="col-lg-6">
               <div className='mb-3'>
@@ -140,14 +128,13 @@ function AddProject() {
           <Button variant="secondary" onClick={handleClose}>
             Close
           </Button>
-          <Button variant="primary" onClick={handleAddProject}>Add</Button>
+          <Button variant="primary" onClick={handleUpdate}>Update</Button>
         </Modal.Footer>
       </Modal>
       <ToastContainer position='top-right' autoClose={2000} theme='colored' />
 
     </>
-
   )
 }
 
-export default AddProject
+export default EditProject
